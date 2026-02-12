@@ -1,8 +1,7 @@
+
 import { GoogleGenAI, GenerateContentResponse, Content } from "@google/genai";
 import { Message } from "../types";
 import { TOUR_DATA } from "../constants";
-
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 const SYSTEM_INSTRUCTION = `
 You are the Official Tour Expert for the ${TOUR_DATA.name}. 
@@ -35,6 +34,10 @@ Guidelines:
 `;
 
 export async function askTourExpert(message: string, history: Message[]): Promise<string> {
+  // CRITICAL: Initialize GoogleGenAI inside the function to avoid errors when running in environments
+  // where the API Key might not be immediately available during module load.
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
   try {
     const contents: Content[] = [
       ...history.map(m => ({
