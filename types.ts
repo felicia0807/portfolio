@@ -5,36 +5,34 @@ export interface Message {
   feedback: 'positive' | 'negative' | null;
 }
 
-export interface Project {
+export interface Tournament {
   id: string;
-  title: string;
-  description: string;
-  longDescription: string;
-  tags: string[];
-  image: string;
-  links: {
-    github?: string;
-    live?: string;
-  };
-}
-
-export interface Skill {
-  category: string;
-  items: string[];
-}
-
-export interface PortfolioData {
   name: string;
-  role: string;
-  bio: string;
+  date: string;
   location: string;
+  status: 'Upcoming' | 'Live' | 'Completed';
+  image: string;
+}
+
+export interface Player {
+  rank: number;
+  name: string;
+  points: number;
+  country: string;
+  image: string;
+  bio?: string;
+  highlights?: string[];
+  videos?: string[];
+}
+
+export interface TourData {
+  name: string;
+  tagline: string;
+  description: string;
   email: string;
-  skills: Skill[];
-  projects: Project[];
-  experience: {
-    company: string;
-    role: string;
-    period: string;
-    description: string;
+  tournaments: Tournament[];
+  rankings: {
+    category: string;
+    players: Player[];
   }[];
 }

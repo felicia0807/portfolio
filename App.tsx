@@ -1,89 +1,123 @@
 
-import React, { useState, useEffect, useRef } from 'react';
-import { PORTFOLIO_DATA } from './constants';
-
-// Animation Wrapper Component
-const FadeInSection: React.FC<{ children: React.ReactNode; delay?: number }> = ({ children, delay = 0 }) => {
-  const [isVisible, setVisible] = useState(false);
-  const domRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(entries => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          observer.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0.1 });
-
-    const current = domRef.current;
-    if (current) observer.observe(current);
-    
-    return () => {
-      if (current) observer.unobserve(current);
-    };
-  }, []);
-
-  return (
-    <div
-      ref={domRef}
-      className={`transition-all duration-700 ease-out transform ${
-        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-      }`}
-      style={{ transitionDelay: `${delay}ms` }}
-    >
-      {children}
-    </div>
-  );
-};
+import React, { useState, useEffect } from 'react';
+import { TOUR_DATA } from './constants';
+import { Player } from './types';
+import AIChat from './components/AIChat';
 
 const App: React.FC = () => {
+  const [activeRankingTab, setActiveRankingTab] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
 
-  const navLinks = [
-    { name: 'About', href: '#hero' },
-    { name: 'Projects', href: '#projects' },
-    { name: 'Skills', href: '#skills' },
-    { name: 'Experience', href: '#experience' },
-    { name: 'Contact', href: '#contact' },
+  // Form State
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    message: ''
+  });
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [formError, setFormError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const services = [
+    "Player Sponsorship",
+    "Tournament Partnership",
+    "Media & Press Inquiry",
+    "Pro Clinic Booking",
+    "Coaching Certification",
+    "Brand Ambassador"
   ];
 
-  const closeMenu = () => setIsMenuOpen(false);
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+
+  const toggleService = (service: string) => {
+    setSelectedServices(prev => 
+      prev.includes(service) 
+        ? prev.filter(s => s !== service) 
+        : [...prev, service]
+    );
+  };
+
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError('');
+
+    if (!formData.name.trim() || !formData.message.trim() || !formData.email.trim()) {
+      setFormError('Please fill in all required fields (Name, Email, Message).');
+      return;
+    }
+
+    setIsSubmitting(true);
+    const servicesText = selectedServices.length > 0 ? selectedServices.join(', ') : 'None specified';
+    
+    // Prepare webhook data
+    const payload = {
+      name: formData.name,
+      email: formData.email,
+      services: servicesText,
+      message: formData.message,
+      timestamp: new Date().toISOString()
+    };
+
+    try {
+      // Send to Google Sheets Webhook
+      await fetch('https://script.google.com/macros/s/AKfycbzw2-ffOQQdvRkb3xLOvou02ZzJYCr5UbIbFKx98IWNAeJOJK1lwF2YG0z7rr7_BfE0/exec', {
+        method: 'POST',
+        mode: 'no-cors', // Use no-cors for simple Google Apps Script redirects
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      });
+    } catch (err) {
+      console.error('Webhook submission error:', err);
+      // We proceed to WhatsApp regardless so the lead is never lost
+    } finally {
+      setIsSubmitting(false);
+    }
+
+    const whatsappNumber = '60120000000'; // Target number
+    const waMessageBody = `NEW INQUIRY\nName: ${formData.name}\nEmail: ${formData.email}\nServices: ${servicesText}\nMessage: ${formData.message}`;
+    
+    const encodedMessage = encodeURIComponent(waMessageBody);
+    window.open(`https://wa.me/${whatsappNumber}?text=${encodedMessage}`, '_blank');
+  };
 
   return (
-    <div className="min-h-screen relative overflow-x-hidden bg-[#030712] text-white">
-      {/* Background Blobs */}
-      <div className="fixed top-0 left-0 w-full h-full -z-10 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[80%] md:w-[50%] h-[50%] bg-indigo-900/20 blur-[80px] md:blur-[120px] rounded-full"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[80%] md:w-[50%] h-[50%] bg-rose-900/20 blur-[80px] md:blur-[120px] rounded-full"></div>
-      </div>
-
+    <div className="min-h-screen bg-[#030712] text-white">
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 w-full z-40 glass border-b-0 border-white/5 px-4 md:px-6 py-4">
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <div className="text-lg md:text-xl font-bold tracking-tighter gradient-text shrink-0 uppercase">
-            {PORTFOLIO_DATA.name}
+      <nav className={`fixed top-0 w-full z-40 transition-all duration-300 ${scrolled ? 'bg-black/90 backdrop-blur-md border-b border-white/10' : 'bg-transparent'} px-4 md:px-6 py-4`}>
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-yellow-400 flex items-center justify-center rounded-sm rotate-12">
+               <span className="text-black font-black italic -rotate-12">P</span>
+            </div>
+            <span className="font-black tracking-tighter text-lg md:text-xl uppercase italic">
+              {TOUR_DATA.name}
+            </span>
           </div>
-          
-          {/* Desktop Nav */}
-          <div className="hidden md:flex gap-8 text-sm font-medium text-white/70">
-            {navLinks.map(link => (
-              <a key={link.name} href={link.href} className="hover:text-white transition-colors">{link.name}</a>
-            ))}
+
+          <div className="hidden md:flex gap-8 text-[10px] font-black uppercase tracking-widest text-white/70">
+            <a href="#tournaments" className="hover:text-yellow-400 transition-colors">Tournaments</a>
+            <a href="#rules" className="hover:text-yellow-400 transition-colors">The Kitchen</a>
+            <a href="#rankings" className="hover:text-yellow-400 transition-colors">Rankings</a>
+            <a href="#contact" className="hover:text-yellow-400 transition-colors">Inquiry</a>
           </div>
 
           <div className="flex items-center gap-4">
-            <a href="#contact" className="hidden sm:inline-block px-5 py-2 bg-white text-black text-sm font-bold rounded-full hover:bg-white/90 transition-all active:scale-95">
-              Hire Me
-            </a>
-            
-            {/* Mobile Menu Toggle */}
-            <button 
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden p-2 text-white/70 hover:text-white transition-colors"
-              aria-label="Toggle menu"
-            >
+            <button className="hidden sm:block bg-yellow-400 text-black px-4 py-2 rounded-sm font-black text-xs uppercase tracking-tighter hover:bg-yellow-300 transition-all">
+              Buy Tickets
+            </button>
+            <button onClick={toggleMenu} className="md:hidden p-2 text-white" aria-label="Toggle menu">
               {isMenuOpen ? (
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               ) : (
@@ -93,191 +127,456 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        {/* Mobile Nav Overlay */}
         {isMenuOpen && (
-          <div className="md:hidden absolute top-full left-0 w-full glass border-t border-white/10 py-6 px-6 animate-in fade-in slide-in-from-top-4 duration-300">
-            <div className="flex flex-col gap-6 text-lg font-medium">
-              {navLinks.map(link => (
-                <a key={link.name} href={link.href} onClick={closeMenu} className="text-white/70 hover:text-white transition-colors">{link.name}</a>
-              ))}
-              <a href="#contact" onClick={closeMenu} className="w-full text-center px-5 py-3 bg-white text-black font-bold rounded-xl">
-                Hire Me
-              </a>
+          <div className="md:hidden fixed inset-0 top-[64px] bg-black z-50 flex flex-col p-8 space-y-6 animate-in slide-in-from-right duration-300">
+            <a href="#tournaments" onClick={toggleMenu} className="text-3xl font-black uppercase italic tracking-tighter">Tournaments</a>
+            <a href="#rules" onClick={toggleMenu} className="text-3xl font-black uppercase italic tracking-tighter">Rules</a>
+            <a href="#rankings" onClick={toggleMenu} className="text-3xl font-black uppercase italic tracking-tighter">Rankings</a>
+            <a href="#contact" onClick={toggleMenu} className="text-3xl font-black uppercase italic tracking-tighter">Contact</a>
+            <div className="pt-8">
+              <button className="w-full bg-yellow-400 text-black py-4 rounded-sm font-black text-lg uppercase tracking-widest">
+                Buy Tickets
+              </button>
             </div>
           </div>
         )}
       </nav>
 
       {/* Hero Section */}
-      <section id="hero" className="pt-32 md:pt-48 pb-16 md:pb-24 px-6">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center gap-10 md:gap-16">
-          <div className="flex-1 space-y-6 text-center md:text-left order-2 md:order-1">
-            <div className="inline-block px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] md:text-xs font-mono text-indigo-400">
-              OPEN FOR OPPORTUNITIES
-            </div>
-            <h1 className="text-4xl md:text-7xl font-extrabold tracking-tight leading-[1.1]">
-              Building the next generation of <span className="gradient-text">digital apps.</span>
-            </h1>
-            <p className="text-base md:text-xl text-white/60 max-w-2xl mx-auto md:mx-0">
-              {PORTFOLIO_DATA.bio}
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start pt-4">
-              <a href="#projects" className="px-8 py-4 bg-indigo-600 rounded-full font-bold hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20 text-center">
-                View My Work
-              </a>
-              <a href="#contact" className="px-8 py-4 bg-white/5 border border-white/10 rounded-full font-bold hover:bg-white/10 transition-all text-center">
-                Contact Me
-              </a>
-            </div>
-          </div>
-          <div className="w-48 h-48 md:w-80 md:h-80 relative order-1 md:order-2">
-             <div className="absolute inset-0 bg-indigo-600 rounded-3xl rotate-6 animate-pulse opacity-10 md:opacity-20"></div>
-             <img 
-               src="https://picsum.photos/400/400?grayscale" 
-               alt={PORTFOLIO_DATA.name} 
-               className="relative z-10 w-full h-full object-cover rounded-3xl border border-white/10 grayscale hover:grayscale-0 transition-all duration-700 shadow-2xl"
-             />
-          </div>
+      <header className="relative min-h-[90vh] md:h-[80vh] flex items-center justify-center overflow-hidden pt-20">
+        <div className="absolute inset-0 z-0">
+          <img 
+            src="https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?q=80&w=2000&auto=format&fit=crop" 
+            className="w-full h-full object-cover opacity-60 object-center"
+            alt="Close up of a pickleball paddle and perforated ball"
+            loading="eager"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#030712] via-[#030712]/50 to-black/70"></div>
         </div>
-      </section>
-
-      {/* Projects Grid */}
-      <section id="projects" className="py-16 md:py-24 px-6 bg-white/[0.01]">
-        <div className="max-w-6xl mx-auto">
-          <div className="mb-10 md:mb-12">
-            <h2 className="text-2xl md:text-3xl font-bold mb-4">Featured Projects</h2>
-            <div className="w-16 md:w-20 h-1.5 bg-indigo-600 rounded-full"></div>
+        <div className="relative z-10 text-center max-w-4xl px-6">
+          <div className="mb-6 inline-block bg-indigo-600 px-4 py-1 text-[10px] font-black uppercase tracking-[0.3em] skew-x-[-10deg]">
+             Official 2025 Tour
           </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-            {PORTFOLIO_DATA.projects.map((project, index) => (
-              <FadeInSection key={project.id} delay={index * 150}>
-                <div className="group glass rounded-2xl overflow-hidden hover:translate-y-[-8px] transition-all duration-300 h-full flex flex-col">
-                  <div className="h-48 md:h-52 overflow-hidden relative">
-                    <img src={project.image} alt={project.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <div className="flex gap-2">
-                        <span className="px-2 py-1 bg-white/20 rounded text-[10px] font-bold backdrop-blur">LIVE PREVIEW</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="p-5 md:p-6 flex-1 flex flex-col">
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      {project.tags.map(tag => (
-                        <span key={tag} className="px-2 py-0.5 bg-indigo-600/20 text-indigo-300 rounded text-[10px] font-mono">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                    <h3 className="text-xl font-bold mb-2 group-hover:text-indigo-400 transition-colors">{project.title}</h3>
-                    <p className="text-white/60 text-sm leading-relaxed mb-4 flex-1">
-                      {project.description}
-                    </p>
-                    <div className="flex items-center gap-4 mt-auto">
-                      <a href={project.links.github} className="text-xs font-bold text-white/50 hover:text-white transition-colors">Github</a>
-                      <a href={project.links.live} className="text-xs font-bold text-indigo-400 hover:text-indigo-300 transition-colors">Case Study →</a>
-                    </div>
-                  </div>
-                </div>
-              </FadeInSection>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Skills Section */}
-      <section id="skills" className="py-16 md:py-24 px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="mb-10 md:mb-12 text-center">
-            <h2 className="text-2xl md:text-3xl font-bold mb-4">Technical Expertise</h2>
-            <p className="text-white/50 text-sm md:text-base">Modern stacks and cutting-edge technologies</p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-            {PORTFOLIO_DATA.skills.map((skillGroup, idx) => (
-              <FadeInSection key={idx} delay={idx * 100}>
-                <div className="p-5 md:p-6 rounded-2xl border border-white/5 bg-white/[0.01] hover:bg-white/[0.03] transition-colors h-full">
-                  <h3 className="font-bold text-indigo-400 mb-4 font-mono text-xs tracking-widest uppercase">{skillGroup.category}</h3>
-                  <ul className="grid grid-cols-2 sm:grid-cols-1 gap-2 md:space-y-3">
-                    {skillGroup.items.map(item => (
-                      <li key={item} className="text-white/70 flex items-center gap-2 group text-sm md:text-base">
-                        <span className="shrink-0 w-1.5 h-1.5 bg-indigo-600 rounded-full group-hover:scale-150 transition-transform"></span>
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </FadeInSection>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Experience Timeline */}
-      <section id="experience" className="py-16 md:py-24 px-6 bg-white/[0.01]">
-        <div className="max-w-3xl mx-auto">
-          <div className="mb-10 md:mb-12">
-            <h2 className="text-2xl md:text-3xl font-bold mb-4">Work History</h2>
-            <div className="w-16 md:w-20 h-1.5 bg-indigo-600 rounded-full"></div>
-          </div>
-
-          <div className="space-y-10 md:space-y-12">
-            {PORTFOLIO_DATA.experience.map((exp, idx) => (
-              <FadeInSection key={idx} delay={idx * 100}>
-                <div className="relative pl-7 md:pl-8 border-l border-white/10 group">
-                  <div className="absolute left-[-5px] top-0 w-2.5 h-2.5 bg-indigo-600 rounded-full group-hover:scale-150 transition-transform shadow-[0_0_10px_rgba(79,70,229,0.5)]"></div>
-                  <div className="mb-1 text-xs md:text-sm font-mono text-indigo-400">{exp.period}</div>
-                  <h3 className="text-lg md:text-xl font-bold">{exp.role}</h3>
-                  <div className="text-white/40 font-medium mb-3 text-sm md:text-base">{exp.company}</div>
-                  <p className="text-white/60 text-sm md:text-base leading-relaxed">
-                    {exp.description}
-                  </p>
-                </div>
-              </FadeInSection>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Contact Section */}
-      <section id="contact" className="py-20 md:py-32 px-4 md:px-6">
-        <div className="max-w-4xl mx-auto glass p-6 md:p-12 rounded-2xl md:rounded-3xl text-center relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none hidden sm:block">
-             <svg className="w-32 md:w-48 h-32 md:h-48" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" />
-             </svg>
-          </div>
-          <h2 className="text-3xl md:text-4xl font-extrabold mb-6">Let's build something <span className="gradient-text">legendary.</span></h2>
-          <p className="text-white/60 text-base md:text-lg mb-8 md:mb-10 max-w-lg mx-auto">
-            I'm currently looking for new opportunities. Whether you have a question or just want to say hi, I'll try my best to get back to you!
+          <h1 className="text-5xl sm:text-7xl md:text-9xl font-black italic uppercase leading-none tracking-tighter mb-6">
+            Pickleball <span className="text-yellow-400 block sm:inline">Unleashed</span>
+          </h1>
+          <p className="text-lg md:text-2xl font-light text-white/80 mb-10 max-w-2xl mx-auto">
+            {TOUR_DATA.tagline}. No strings attached—literally.
           </p>
-          <div className="flex flex-col items-center gap-6">
-            <a href={`mailto:${PORTFOLIO_DATA.email}`} className="w-full sm:w-auto px-8 md:px-10 py-4 bg-indigo-600 rounded-full font-bold hover:bg-indigo-500 transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-              {PORTFOLIO_DATA.email}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <a href="#contact" className="px-10 py-5 bg-yellow-400 text-black font-black uppercase italic tracking-widest hover:bg-yellow-300 transition-all text-sm flex items-center justify-center">
+              Partner with Us
             </a>
-            <div className="flex gap-4">
-              <a href="#" className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all">
-                <span className="sr-only">LinkedIn</span>
-                <svg className="w-5 h-5 md:w-6 md:h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
-              </a>
-              <a href="#" className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all">
-                 <span className="sr-only">GitHub</span>
-                 <svg className="w-5 h-5 md:w-6 md:h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-              </a>
+            <button className="px-10 py-5 border-2 border-white/20 font-black uppercase italic tracking-widest hover:border-yellow-400 transition-all text-sm">
+              View Ladder
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Court Logic Section */}
+      <section id="rules" className="py-24 px-4 md:px-6 overflow-hidden">
+        <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-12 items-center">
+          <div className="relative">
+            <div className="absolute -top-20 -left-20 w-64 h-64 bg-indigo-600/20 blur-[100px] rounded-full"></div>
+            <h2 className="text-4xl md:text-5xl font-black uppercase italic tracking-tighter mb-8 leading-none">
+              Master the <br/><span className="text-indigo-500">Kitchen</span>
+            </h2>
+            <div className="space-y-8 relative z-10">
+              <div className="flex gap-6">
+                <div className="text-yellow-400 font-black text-2xl">01</div>
+                <div>
+                  <h4 className="font-black uppercase tracking-widest text-sm mb-1">Non-Volley Zone</h4>
+                  <p className="text-white/50 text-sm leading-relaxed">Stay out of the 7-foot kitchen zone unless the ball has bounced. It's the heart of pickleball strategy.</p>
+                </div>
+              </div>
+              <div className="flex gap-6">
+                <div className="text-yellow-400 font-black text-2xl">02</div>
+                <div>
+                  <h4 className="font-black uppercase tracking-widest text-sm mb-1">Double Bounce Rule</h4>
+                  <p className="text-white/50 text-sm leading-relaxed">The serve must bounce, and the return must bounce. After that, let the volleys fly.</p>
+                </div>
+              </div>
+              <div className="flex gap-6">
+                <div className="text-yellow-400 font-black text-2xl">03</div>
+                <div>
+                  <h4 className="font-black uppercase tracking-widest text-sm mb-1">The Dinking Game</h4>
+                  <p className="text-white/50 text-sm leading-relaxed">Soft touch, precise placement. Dinking is how the pros win the battle at the net.</p>
+                </div>
+              </div>
             </div>
+          </div>
+          <div className="glass p-2 rounded-2xl transform md:rotate-3 shadow-2xl">
+             <img src="https://images.unsplash.com/photo-1592719315570-36e78996615b?q=80&w=1000&auto=format&fit=crop" className="rounded-xl w-full" alt="Professional pickleball players at the net"/>
+          </div>
+        </div>
+      </section>
+
+      {/* Rankings Leaderboard */}
+      <section id="rankings" className="py-24 px-4 md:px-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-black uppercase italic tracking-tighter mb-8">World Paddle Rankings</h2>
+            <div className="flex flex-wrap justify-center gap-2 md:gap-4">
+              {TOUR_DATA.rankings.map((r, i) => (
+                <button 
+                  key={i}
+                  onClick={() => setActiveRankingTab(i)}
+                  className={`px-6 py-2 text-[10px] font-black uppercase tracking-widest transition-all ${activeRankingTab === i ? 'bg-yellow-400 text-black shadow-[0_0_15px_rgba(251,191,36,0.3)]' : 'bg-white/5 text-white/40 hover:text-white'}`}
+                >
+                  {r.category}
+                </button>
+              ))}
+            </div>
+            <p className="mt-4 text-white/30 text-[10px] font-black uppercase tracking-widest">Click an athlete to view their pro bio</p>
+          </div>
+
+          <div className="hidden sm:block glass rounded-xl overflow-hidden border-white/5 shadow-2xl">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-white/40">
+                  <th className="px-6 py-4">Rank</th>
+                  <th className="px-6 py-4">Pro Athlete</th>
+                  <th className="px-6 py-4">Total Points</th>
+                  <th className="px-6 py-4 text-right">Region</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {TOUR_DATA.rankings[activeRankingTab].players.map(p => (
+                  <tr 
+                    key={p.name} 
+                    className="hover:bg-white/[0.05] cursor-pointer transition-colors group"
+                    onClick={() => setSelectedPlayer(p)}
+                  >
+                    <td className="px-6 py-6 text-2xl font-black italic text-yellow-400">{p.rank}</td>
+                    <td className="px-6 py-6">
+                      <div className="flex items-center gap-4">
+                        <img src={p.image} className="w-10 h-10 rounded-full border border-white/10 object-cover bg-gray-800" alt={p.name} />
+                        <span className="font-bold text-lg group-hover:text-yellow-400 transition-colors">{p.name}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-6 font-mono text-sm text-white/70 tracking-tighter">{p.points.toLocaleString()}</td>
+                    <td className="px-6 py-6 text-right font-black uppercase italic text-white/30 group-hover:text-indigo-400 transition-colors">{p.country}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="sm:hidden space-y-4">
+            {TOUR_DATA.rankings[activeRankingTab].players.map(p => (
+              <div 
+                key={p.name} 
+                className="glass p-4 rounded-xl border-white/5 flex items-center justify-between active:bg-white/10 transition-colors"
+                onClick={() => setSelectedPlayer(p)}
+              >
+                <div className="flex items-center gap-4">
+                  <span className="text-3xl font-black italic text-yellow-400 min-w-[40px]">{p.rank}</span>
+                  <div className="flex items-center gap-3">
+                    <img src={p.image} className="w-12 h-12 rounded-full border border-white/10 object-cover bg-gray-800" alt={p.name} />
+                    <div>
+                      <div className="font-bold text-base leading-tight">{p.name}</div>
+                      <div className="text-[10px] text-white/40 uppercase font-black tracking-widest">{p.country}</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="font-mono text-sm text-yellow-400">{p.points.toLocaleString()}</div>
+                  <div className="text-[10px] text-white/40 uppercase font-black">Points</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Submission Form Section */}
+      <section id="contact" className="py-24 px-4 md:px-6 bg-white/[0.02] border-t border-white/5">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-6xl font-black uppercase italic tracking-tighter mb-4">Tour <span className="text-yellow-400">Inquiry</span></h2>
+            <p className="text-white/50 uppercase tracking-widest text-[10px] font-black">Professional sponsorships & media partnerships</p>
+          </div>
+
+          <form onSubmit={handleFormSubmit} className="glass p-8 md:p-12 rounded-3xl border-indigo-500/20 shadow-2xl">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Your Full Name *</label>
+                <input 
+                  type="text" 
+                  required
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  placeholder="John Doe"
+                  className="w-full bg-white/5 border border-white/10 rounded-sm py-4 px-4 text-white placeholder:text-white/20 focus:outline-none focus:border-yellow-400 transition-all font-medium"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Email Address *</label>
+                <input 
+                  type="email" 
+                  required
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  placeholder="john@example.com"
+                  className="w-full bg-white/5 border border-white/10 rounded-sm py-4 px-4 text-white placeholder:text-white/20 focus:outline-none focus:border-yellow-400 transition-all font-medium"
+                />
+              </div>
+            </div>
+
+            <div className="mb-8">
+              <label className="text-[10px] font-black uppercase tracking-widest text-indigo-400 block mb-4">Pickleball Services/Interests</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {services.map(service => (
+                  <div 
+                    key={service}
+                    onClick={() => toggleService(service)}
+                    className={`flex items-center gap-3 p-4 rounded-sm border cursor-pointer transition-all ${selectedServices.includes(service) ? 'border-yellow-400 bg-yellow-400/10 text-yellow-400' : 'border-white/10 bg-white/[0.02] hover:border-white/30 text-white/50'}`}
+                  >
+                    <div className={`w-4 h-4 border flex items-center justify-center rounded-sm ${selectedServices.includes(service) ? 'bg-yellow-400 border-yellow-400' : 'border-white/30'}`}>
+                      {selectedServices.includes(service) && (
+                        <svg className="w-3 h-3 text-black" fill="currentColor" viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" /></svg>
+                      )}
+                    </div>
+                    <span className="text-xs font-bold uppercase tracking-tight">{service}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2 mb-10">
+              <label className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Message / Inquiry Details *</label>
+              <textarea 
+                rows={5}
+                required
+                value={formData.message}
+                onChange={(e) => setFormData({...formData, message: e.target.value})}
+                placeholder="Tell us more about your interest in the PPC Tour..."
+                className="w-full bg-white/5 border border-white/10 rounded-sm py-4 px-4 text-white placeholder:text-white/20 focus:outline-none focus:border-yellow-400 transition-all font-medium resize-none"
+              ></textarea>
+            </div>
+
+            {formError && (
+              <div className="mb-6 p-4 bg-rose-500/20 border border-rose-500 text-rose-500 text-xs font-bold uppercase tracking-widest rounded-sm">
+                {formError}
+              </div>
+            )}
+
+            <button 
+              type="submit"
+              disabled={isSubmitting}
+              className={`w-full ${isSubmitting ? 'bg-yellow-600 cursor-not-allowed opacity-70' : 'bg-yellow-400 hover:bg-yellow-300'} text-black py-5 rounded-sm font-black uppercase italic tracking-[0.2em] shadow-lg shadow-yellow-400/20 transition-all flex items-center justify-center gap-3`}
+            >
+              {isSubmitting ? (
+                <>
+                  <svg className="animate-spin h-5 w-5 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.588-5.946 0-6.556 5.332-11.891 11.891-11.891 3.181 0 6.167 1.24 8.413 3.488 2.246 2.248 3.484 5.232 3.484 8.403 0 6.556-5.332 11.891-11.891 11.891-2.093 0-4.141-.544-5.946-1.587l-6.13 1.611c-.139.038-.28.058-.419.058-.337 0-.663-.131-.904-.372-.259-.258-.372-.631-.303-1.002zm6.34-3.244l.366.213c1.528.887 3.274 1.355 5.077 1.355 5.454 0 9.891-4.437 9.891-9.891 0-2.64-1.029-5.122-2.898-6.991-1.87-1.868-4.352-2.897-6.993-2.897-5.454 0-9.891 4.437-9.891 9.891 0-2.023.613 3.996 1.772 5.688l.235.344-1.011 3.691 3.844-1.011z" /></svg>
+                  Submit Inquiry
+                </>
+              )}
+            </button>
+          </form>
+        </div>
+      </section>
+
+      {/* Player Bio Modal */}
+      {selectedPlayer && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 md:p-6 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
+          <div 
+            className="glass w-full max-w-4xl max-h-[90vh] rounded-3xl overflow-hidden shadow-2xl relative animate-in zoom-in-95 duration-300 border-indigo-500/40 flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button 
+              onClick={() => setSelectedPlayer(null)}
+              className="absolute top-4 right-4 w-10 h-10 flex items-center justify-center bg-black/50 hover:bg-black rounded-full text-white/70 hover:text-white transition-all z-10"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            
+            <div className="flex flex-col md:flex-row overflow-y-auto">
+              <div className="w-full md:w-[35%] min-h-[400px] md:min-h-0 overflow-hidden bg-gray-900 sticky top-0">
+                <img src={selectedPlayer.image} className="w-full h-full object-cover" alt={selectedPlayer.name} />
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-transparent to-transparent md:hidden"></div>
+              </div>
+              <div className="flex-1 p-6 md:p-12 flex flex-col">
+                <div className="flex items-center gap-6 mb-8">
+                  <span className="text-6xl font-black italic text-yellow-400 leading-none">{selectedPlayer.rank}</span>
+                  <div>
+                    <h3 className="text-3xl md:text-5xl font-black uppercase italic leading-tight tracking-tighter">{selectedPlayer.name}</h3>
+                    <p className="text-xs font-black uppercase tracking-[0.3em] text-white/40">{selectedPlayer.country} • Professional Pickleball Athlete</p>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-10">
+                  <div>
+                    <h4 className="text-[10px] font-black uppercase text-indigo-400 mb-3 tracking-widest border-b border-indigo-500/20 pb-1 inline-block">Professional Biography</h4>
+                    <p className="text-sm text-white/80 leading-relaxed italic">
+                      {selectedPlayer.bio || "Placeholder Bio: One of the most dynamic athletes on the professional pickleball circuit today, known for their strategic mastery of the kitchen and relentless court movement."}
+                    </p>
+                  </div>
+
+                  <div>
+                    <h4 className="text-[10px] font-black uppercase text-indigo-400 mb-4 tracking-widest border-b border-indigo-500/20 pb-1 inline-block">Career Highlights</h4>
+                    <ul className="space-y-3">
+                      {(selectedPlayer.highlights || ["National Medalist", "Masters Series Finalist", "Ranked Top 10 Globally"]).map((h, i) => (
+                        <li key={i} className="flex items-center gap-4 text-xs font-bold text-white/90">
+                          <span className="w-2 h-2 rotate-45 bg-yellow-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]"></span>
+                          {h}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Video Highlights Section */}
+                <div className="mb-10">
+                  <h4 className="text-[10px] font-black uppercase text-indigo-400 mb-4 tracking-widest border-b border-indigo-500/20 pb-1 inline-block">Reel Highlights</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {(selectedPlayer.videos && selectedPlayer.videos.length > 0) ? (
+                      selectedPlayer.videos.map((vid, i) => (
+                        <div key={i} className="relative group rounded-xl overflow-hidden glass border-white/10 aspect-video">
+                          <video 
+                            src={vid} 
+                            className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                            muted
+                            loop
+                            playsInline
+                            onMouseOver={(e) => e.currentTarget.play()}
+                            onMouseOut={(e) => {
+                              e.currentTarget.pause();
+                              e.currentTarget.currentTime = 0;
+                            }}
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none group-hover:opacity-0 transition-opacity">
+                            <div className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
+                              <svg className="w-4 h-4 text-white fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                            </div>
+                          </div>
+                          <div className="absolute bottom-2 left-3 text-[9px] font-black uppercase tracking-widest text-white/40">Clip #{i+1}</div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="col-span-2 py-8 glass rounded-xl border-dashed border-white/10 flex flex-col items-center justify-center text-white/20">
+                        <svg className="w-8 h-8 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                        <span className="text-[10px] uppercase font-black tracking-widest">No highlight clips currently available</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-auto pt-8 border-t border-white/10 flex justify-between items-center bg-gray-900/50 -mx-6 md:-mx-12 px-6 md:px-12 -mb-6 md:-mb-12 py-8">
+                  <div className="flex gap-8">
+                    <div>
+                      <div className="text-[10px] font-black uppercase text-white/30 tracking-widest mb-1">Total Points</div>
+                      <div className="text-3xl font-mono text-yellow-400 font-black">{selectedPlayer.points.toLocaleString()}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-black uppercase text-white/30 tracking-widest mb-1">Win Rate</div>
+                      <div className="text-3xl font-mono text-indigo-400 font-black">78%</div>
+                    </div>
+                  </div>
+                  <div className="flex gap-4">
+                    <button className="hidden sm:block border border-white/20 hover:border-white text-white px-8 py-3 rounded-sm font-black uppercase text-[10px] italic transition-all">
+                      Full Statistics
+                    </button>
+                    <button className="bg-yellow-400 hover:bg-yellow-300 text-black px-8 py-3 rounded-sm font-black uppercase text-[10px] italic transition-all shadow-lg shadow-yellow-400/20">
+                      Follow Pro
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          {/* Close by clicking overlay */}
+          <div className="absolute inset-0 -z-10" onClick={() => setSelectedPlayer(null)}></div>
+        </div>
+      )}
+
+      {/* Tournaments Section */}
+      <section id="tournaments" className="py-24 px-4 md:px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-4">
+            <div>
+              <h2 className="text-3xl md:text-4xl font-black uppercase italic tracking-tighter mb-2">PPC Pro Stops</h2>
+              <div className="h-1 w-24 bg-yellow-400"></div>
+            </div>
+            <a href="#" className="text-xs font-bold uppercase text-yellow-400 hover:underline tracking-widest">Full 2025 Calendar →</a>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {TOUR_DATA.tournaments.map(t => (
+              <div key={t.id} className="group glass rounded-sm overflow-hidden border-white/5 hover:border-yellow-400/50 transition-all duration-500">
+                <div className="h-48 overflow-hidden relative bg-gray-800">
+                  <img src={t.image} className="w-full h-full object-cover group-hover:scale-105 transition-transform" alt={t.name} />
+                  <div className="absolute top-4 left-4 px-3 py-1 bg-yellow-400 text-black font-black text-[10px] uppercase">
+                    {t.status}
+                  </div>
+                </div>
+                <div className="p-6">
+                  <div className="text-[10px] font-mono text-indigo-400 mb-2 uppercase">{t.date}</div>
+                  <h3 className="text-2xl font-black uppercase mb-1">{t.name}</h3>
+                  <p className="text-white/50 text-xs mb-6 uppercase tracking-wider">{t.location}</p>
+                  <button className="w-full py-3 border border-white/10 text-xs font-black uppercase hover:bg-white hover:text-black transition-all">
+                    Ticket Info
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Final Call to Action */}
+      <section className="py-32 px-4 md:px-6 text-center">
+        <div className="max-w-4xl mx-auto glass p-12 md:p-20 rounded-3xl relative overflow-hidden border-indigo-500/20">
+          <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 via-yellow-400 to-rose-500"></div>
+          <h2 className="text-4xl md:text-6xl font-black italic uppercase tracking-tighter mb-8 leading-none">The Future is <br/> <span className="text-yellow-400">Perforated</span></h2>
+          <p className="text-base md:text-xl text-white/60 mb-12 leading-relaxed max-w-2xl mx-auto">
+            Join the movement that's sweeping the globe. Experience the precision and athleticism of professional pickleball.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-6 justify-center">
+            <a href="#contact" className="bg-white text-black px-12 py-5 font-black uppercase italic tracking-widest hover:bg-yellow-400 transition-all text-sm flex items-center justify-center">
+              Register as Pro
+            </a>
+            <button className="border-2 border-white/10 px-12 py-5 font-black uppercase italic tracking-widest hover:border-white transition-all text-sm">
+              Sponsorships
+            </button>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-10 md:py-12 border-t border-white/5 text-center text-white/30 text-[10px] md:text-xs">
-        <div className="max-w-6xl mx-auto px-6">
-          <p>© {new Date().getFullYear()} {PORTFOLIO_DATA.name}. Built with React & Tailwind.</p>
+      <footer className="py-16 border-t border-white/5 bg-black px-4 md:px-6">
+        <div className="max-w-7xl mx-auto flex flex-col items-center md:flex-row justify-between gap-12 text-center md:text-left">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-white flex items-center justify-center rounded-sm">
+               <span className="text-black font-black text-xs italic">P</span>
+            </div>
+            <div>
+              <span className="font-black text-lg uppercase italic block leading-none">{TOUR_DATA.name}</span>
+              <span className="text-[9px] text-white/30 uppercase tracking-[0.4em] font-bold">World Headquarters</span>
+            </div>
+          </div>
+          <div className="flex flex-wrap justify-center gap-8 md:gap-12 text-[10px] font-black uppercase tracking-[0.2em] text-white/40">
+            <a href="#" className="hover:text-yellow-400 transition-colors">Anti-Doping</a>
+            <a href="#" className="hover:text-yellow-400 transition-colors">Official Rules</a>
+            <a href="#" className="hover:text-yellow-400 transition-colors">Code of Conduct</a>
+            <a href="#contact" className="hover:text-yellow-400 transition-colors">Contact</a>
+          </div>
+          <div className="text-[10px] text-white/20 uppercase tracking-[0.2em] font-black">
+            © 2025 Professional Pickleball Championship. All Rights Reserved.
+          </div>
         </div>
       </footer>
+
+      <AIChat />
     </div>
   );
 };

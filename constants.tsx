@@ -1,65 +1,120 @@
 
-import { PortfolioData } from './types';
+import { TourData } from './types';
 
-export const PORTFOLIO_DATA: PortfolioData = {
-  name: "Felicia",
-  role: "Senior Full Stack Engineer",
-  location: "San Francisco, CA",
-  email: "felicia@example.com",
-  bio: "Passionate architect of digital experiences with 8+ years of expertise in high-performance web applications and AI integration. I build products that bridge the gap between complex data and elegant user interfaces.",
-  skills: [
-    { category: "Frontend", items: ["React", "TypeScript", "Tailwind CSS", "Next.js", "Framer Motion", "D3.js"] },
-    { category: "Backend", items: ["Node.js", "Go", "PostgreSQL", "Redis", "GraphQL", "Python"] },
-    { category: "Cloud/Tools", items: ["AWS", "Docker", "Kubernetes", "CI/CD", "Terraform", "Git"] },
-    { category: "AI/ML", items: ["Gemini API", "OpenAI SDK", "LangChain", "Vector Databases"] }
-  ],
-  projects: [
+export const TOUR_DATA: TourData = {
+  name: "PPC Pro Tour",
+  tagline: "The Zenith of Professional Pickleball",
+  description: "Witness the speed, precision, and passion of the world's fastest-growing professional sport. Join thousands of fans across the nation for elite paddle action.",
+  email: "info@ppctour.com",
+  tournaments: [
     {
-      id: "1",
-      title: "Zenith Dash",
-      description: "Real-time analytics dashboard for fintech platforms.",
-      longDescription: "A comprehensive analytics suite built with React and D3.js, handling over 1 million data points per second with sub-100ms latency. Integrated with WebSocket streams and optimized for high-density information visualization.",
-      tags: ["React", "D3.js", "Node.js", "Redis"],
-      image: "https://picsum.photos/800/600?random=1",
-      links: { github: "#", live: "#" }
+      id: "t1",
+      name: "Arizona Grand Slam",
+      date: "Oct 12-15, 2025",
+      location: "Phoenix, AZ",
+      status: "Upcoming",
+      image: "https://images.unsplash.com/photo-1610410499268-98e826b010f3?q=80&w=800&auto=format&fit=crop" 
     },
     {
-      id: "2",
-      title: "Aeon Commerce",
-      description: "Next-gen headless e-commerce engine.",
-      longDescription: "A headless commerce platform focusing on speed and SEO. Achieved 100/100 Lighthouse scores across the board. Built with Next.js App Router and optimized with edge caching.",
-      tags: ["Next.js", "TypeScript", "Tailwind", "PostgreSQL"],
-      image: "https://picsum.photos/800/600?random=2",
-      links: { github: "#", live: "#" }
+      id: "t2",
+      name: "Coastal Open",
+      date: "Nov 02-05, 2025",
+      location: "Newport Beach, CA",
+      status: "Upcoming",
+      image: "https://images.unsplash.com/photo-1599586120429-48281b6f0ece?q=80&w=800&auto=format&fit=crop"
     },
     {
-      id: "3",
-      title: "Luminal AI",
-      description: "AI-powered creative writing assistant.",
-      longDescription: "An intelligent text editor that suggests narrative arcs and stylistic improvements using Gemini. Features include real-time sentiment analysis and context-aware character tracking.",
-      tags: ["Gemini API", "React", "Python", "Vector DB"],
-      image: "https://picsum.photos/800/600?random=3",
-      links: { github: "#", live: "#" }
+      id: "t3",
+      name: "Indoor Nationals",
+      date: "Dec 10-14, 2025",
+      location: "Dallas, TX",
+      status: "Upcoming",
+      image: "https://images.unsplash.com/photo-1613941433280-927977464019?q=80&w=800&auto=format&fit=crop"
     }
   ],
-  experience: [
+  rankings: [
     {
-      company: "TechNova Solutions",
-      role: "Lead Frontend Engineer",
-      period: "2021 - Present",
-      description: "Leading a team of 12 engineers in building next-generation cloud infrastructure management tools. Spearheaded the migration to a micro-frontend architecture."
+      category: "Men's Singles",
+      players: [
+        { 
+          rank: 1, 
+          name: "Ben Johns", 
+          points: 14200, 
+          country: "USA", 
+          image: "https://i.pravatar.cc/300?u=ben",
+          bio: "Widely regarded as the greatest of all time, Ben Johns dominated the triple crown circuit for over three years. Known for his tactical precision and unmatched court coverage.",
+          highlights: ["3x Triple Crown Winner", "50+ Career Titles", "PPC Tour Player of the Year 2024"],
+          videos: [
+            "https://assets.mixkit.co/videos/preview/mixkit-man-playing-tennis-on-a-sunny-day-34351-large.mp4",
+            "https://assets.mixkit.co/videos/preview/mixkit-professional-tennis-player-hitting-a-ball-40082-large.mp4"
+          ]
+        },
+        { 
+          rank: 2, 
+          name: "Federico Staksrud", 
+          points: 12150, 
+          country: "ARG", 
+          image: "https://i.pravatar.cc/300?u=fed",
+          bio: "The 'Argentine Sensation' brings a high-octane aggressive style to the court. His powerful two-handed backhand has redefined the singles meta.",
+          highlights: ["2025 Phoenix Open Champion", "Fastest serve recorded in PPC history", "Pan-American Gold Medalist"],
+          videos: [
+            "https://assets.mixkit.co/videos/preview/mixkit-athlete-playing-tennis-on-a-court-40083-large.mp4"
+          ]
+        },
+        { 
+          rank: 3, 
+          name: "Connor Garnett", 
+          points: 9800, 
+          country: "USA", 
+          image: "https://i.pravatar.cc/300?u=con",
+          bio: "A former D1 tennis standout who transitioned to pickleball with explosive speed. Connor is known for his incredible lateral movement and deep third-shot drops.",
+          highlights: ["Top 3 Singles Debut 2024", "Most Improved Player 2024", "National Championship Finalist"],
+          videos: [
+            "https://assets.mixkit.co/videos/preview/mixkit-tennis-player-waiting-for-the-ball-40081-large.mp4"
+          ]
+        }
+      ]
     },
     {
-      company: "DataStream Inc.",
-      role: "Senior Full Stack Developer",
-      period: "2018 - 2021",
-      description: "Developed and maintained real-time data visualization pipelines for fortune 500 clients. Reduced infrastructure costs by 35% through container optimization."
-    },
-    {
-      company: "CloudBound Systems",
-      role: "Software Engineer",
-      period: "2015 - 2018",
-      description: "Worked on core product features using Ruby on Rails and React. Improved page load times by 60% through aggressive caching and asset optimization."
+      category: "Women's Singles",
+      players: [
+        { 
+          rank: 1, 
+          name: "Anna Leigh Waters", 
+          points: 15600, 
+          country: "USA", 
+          image: "https://i.pravatar.cc/300?u=alw",
+          bio: "A prodigy turned superstar. At just 18, Anna Leigh has rewritten the record books, combining teenage agility with the strategic depth of a veteran.",
+          highlights: ["Youngest #1 in history", "Undefeated in 2024 Singles", "World Pickleball Icon Award"],
+          videos: [
+            "https://assets.mixkit.co/videos/preview/mixkit-female-tennis-player-ready-to-hit-the-ball-40086-large.mp4"
+          ]
+        },
+        { 
+          rank: 2, 
+          name: "Catherine Parenteau", 
+          points: 11200, 
+          country: "CAN", 
+          image: "https://i.pravatar.cc/300?u=cat",
+          bio: "Canada's top pro is a model of consistency. Her ability to reset the point from any position makes her the most difficult player to put away on tour.",
+          highlights: ["Canadian National Champion", "Master of the Reset", "PPC Sportsmanship Award Winner"],
+          videos: [
+            "https://assets.mixkit.co/videos/preview/mixkit-female-athlete-playing-tennis-40085-large.mp4"
+          ]
+        },
+        { 
+          rank: 3, 
+          name: "Lea Jansen", 
+          points: 8900, 
+          country: "USA", 
+          image: "https://i.pravatar.cc/300?u=lea",
+          bio: "The fiercest competitor on the circuit. Lea's fire and passion are matched only by her technical mastery of the dink game.",
+          highlights: ["2024 Masters Series Finalist", "Ranked #1 in Mixed Doubles 2023", "Lead Pro Instructor for PPC Academy"],
+          videos: [
+            "https://assets.mixkit.co/videos/preview/mixkit-young-woman-playing-tennis-40084-large.mp4"
+          ]
+        }
+      ]
     }
   ]
 };
