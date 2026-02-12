@@ -1,4 +1,10 @@
 
+export interface Message {
+  role: 'user' | 'assistant';
+  content: string;
+  feedback: 'positive' | 'negative' | null;
+}
+
 export interface Project {
   id: string;
   title: string;
@@ -15,12 +21,6 @@ export interface Project {
 export interface Skill {
   category: string;
   items: string[];
-}
-
-export interface Message {
-  role: 'user' | 'assistant';
-  content: string;
-  feedback?: 'positive' | 'negative' | null;
 }
 
 export interface PortfolioData {

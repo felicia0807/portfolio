@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { PORTFOLIO_DATA } from './constants';
-import AIChat from './components/AIChat';
 
 // Animation Wrapper Component
 const FadeInSection: React.FC<{ children: React.ReactNode; delay?: number }> = ({ children, delay = 0 }) => {
@@ -53,7 +52,7 @@ const App: React.FC = () => {
   const closeMenu = () => setIsMenuOpen(false);
 
   return (
-    <div className="min-h-screen relative overflow-x-hidden">
+    <div className="min-h-screen relative overflow-x-hidden bg-[#030712] text-white">
       {/* Background Blobs */}
       <div className="fixed top-0 left-0 w-full h-full -z-10 overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[80%] md:w-[50%] h-[50%] bg-indigo-900/20 blur-[80px] md:blur-[120px] rounded-full"></div>
@@ -63,8 +62,8 @@ const App: React.FC = () => {
       {/* Navigation */}
       <nav className="fixed top-0 left-0 w-full z-40 glass border-b-0 border-white/5 px-4 md:px-6 py-4">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <div className="text-lg md:text-xl font-bold tracking-tighter gradient-text shrink-0">
-            {PORTFOLIO_DATA.name.split(' ').join('.').toLowerCase()}
+          <div className="text-lg md:text-xl font-bold tracking-tighter gradient-text shrink-0 uppercase">
+            {PORTFOLIO_DATA.name}
           </div>
           
           {/* Desktop Nav */}
@@ -135,15 +134,15 @@ const App: React.FC = () => {
              <div className="absolute inset-0 bg-indigo-600 rounded-3xl rotate-6 animate-pulse opacity-10 md:opacity-20"></div>
              <img 
                src="https://picsum.photos/400/400?grayscale" 
-               alt="Alex Sterling" 
-               className="relative z-10 w-full h-full object-cover rounded-3xl border border-white/10 grayscale hover:grayscale-0 transition-all duration-700"
+               alt={PORTFOLIO_DATA.name} 
+               className="relative z-10 w-full h-full object-cover rounded-3xl border border-white/10 grayscale hover:grayscale-0 transition-all duration-700 shadow-2xl"
              />
           </div>
         </div>
       </section>
 
       {/* Projects Grid */}
-      <section id="projects" className="py-16 md:py-24 px-6 bg-white/[0.02]">
+      <section id="projects" className="py-16 md:py-24 px-6 bg-white/[0.01]">
         <div className="max-w-6xl mx-auto">
           <div className="mb-10 md:mb-12">
             <h2 className="text-2xl md:text-3xl font-bold mb-4">Featured Projects</h2>
@@ -153,7 +152,7 @@ const App: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
             {PORTFOLIO_DATA.projects.map((project, index) => (
               <FadeInSection key={project.id} delay={index * 150}>
-                <div className="group glass rounded-2xl overflow-hidden hover:translate-y-[-8px] transition-all duration-300 h-full">
+                <div className="group glass rounded-2xl overflow-hidden hover:translate-y-[-8px] transition-all duration-300 h-full flex flex-col">
                   <div className="h-48 md:h-52 overflow-hidden relative">
                     <img src={project.image} alt={project.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-4 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -162,7 +161,7 @@ const App: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                  <div className="p-5 md:p-6">
+                  <div className="p-5 md:p-6 flex-1 flex flex-col">
                     <div className="flex flex-wrap gap-2 mb-3">
                       {project.tags.map(tag => (
                         <span key={tag} className="px-2 py-0.5 bg-indigo-600/20 text-indigo-300 rounded text-[10px] font-mono">
@@ -171,10 +170,10 @@ const App: React.FC = () => {
                       ))}
                     </div>
                     <h3 className="text-xl font-bold mb-2 group-hover:text-indigo-400 transition-colors">{project.title}</h3>
-                    <p className="text-white/60 text-sm leading-relaxed mb-4">
+                    <p className="text-white/60 text-sm leading-relaxed mb-4 flex-1">
                       {project.description}
                     </p>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4 mt-auto">
                       <a href={project.links.github} className="text-xs font-bold text-white/50 hover:text-white transition-colors">Github</a>
                       <a href={project.links.live} className="text-xs font-bold text-indigo-400 hover:text-indigo-300 transition-colors">Case Study →</a>
                     </div>
@@ -215,7 +214,7 @@ const App: React.FC = () => {
       </section>
 
       {/* Experience Timeline */}
-      <section id="experience" className="py-16 md:py-24 px-6 bg-white/[0.02]">
+      <section id="experience" className="py-16 md:py-24 px-6 bg-white/[0.01]">
         <div className="max-w-3xl mx-auto">
           <div className="mb-10 md:mb-12">
             <h2 className="text-2xl md:text-3xl font-bold mb-4">Work History</h2>
@@ -276,12 +275,9 @@ const App: React.FC = () => {
       {/* Footer */}
       <footer className="py-10 md:py-12 border-t border-white/5 text-center text-white/30 text-[10px] md:text-xs">
         <div className="max-w-6xl mx-auto px-6">
-          <p>© {new Date().getFullYear()} {PORTFOLIO_DATA.name}. Built with Gemini & Love.</p>
+          <p>© {new Date().getFullYear()} {PORTFOLIO_DATA.name}. Built with React & Tailwind.</p>
         </div>
       </footer>
-
-      {/* AI Assistant */}
-      <AIChat />
     </div>
   );
 };

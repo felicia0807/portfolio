@@ -7,7 +7,7 @@ const AIChat: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: 'Hi there! I\'m Alex\'s AI assistant. Ask me anything about his work, skills, or experience!', feedback: null }
+    { role: 'assistant', content: 'Hi there! I\'m Felicia\'s AI assistant. Ask me anything about her work, skills, or experience!', feedback: null }
   ]);
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -46,7 +46,8 @@ const AIChat: React.FC = () => {
 
     const userMessage = input.trim();
     setInput('');
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    // Fix: Add missing 'feedback' property to the message object to match the Message interface requirements
+    setMessages(prev => [...prev, { role: 'user', content: userMessage, feedback: null }]);
     setIsTyping(true);
 
     const historyForAI = messages.slice(-6);
@@ -85,7 +86,7 @@ const AIChat: React.FC = () => {
                 <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" aria-hidden="true"></span>
                 AI Portfolio Assistant
               </h3>
-              <p className="text-xs text-white/50">Ask me anything about Alex</p>
+              <p className="text-xs text-white/50">Ask me anything about Felicia</p>
             </div>
             <button 
               onClick={() => setIsOpen(false)}
@@ -162,7 +163,7 @@ const AIChat: React.FC = () => {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask about Alex's skills..."
+                placeholder="Ask about Felicia's skills..."
                 aria-label="Type your message"
                 className="w-full bg-black/40 border border-white/10 rounded-full py-2.5 px-4 pr-12 text-sm focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50"
               />

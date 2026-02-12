@@ -1,14 +1,16 @@
 
-import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
+import { GoogleGenAI, GenerateContentResponse, Content } from "@google/genai";
+import { Message } from "../types";
 import { PORTFOLIO_DATA } from "../constants";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+// Always initialize with the direct apiKey from process.env.API_KEY as per guidelines.
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 const SYSTEM_INSTRUCTION = `
 You are the AI Assistant for ${PORTFOLIO_DATA.name}'s professional portfolio. 
-Your goal is to answer questions from visitors about Alex's skills, experience, and projects.
+Your goal is to answer questions from visitors about ${PORTFOLIO_DATA.name}'s skills, experience, and projects.
 
-Alex is a ${PORTFOLIO_DATA.role} based in ${PORTFOLIO_DATA.location}.
+${PORTFOLIO_DATA.name} is a ${PORTFOLIO_DATA.role} based in ${PORTFOLIO_DATA.location}.
 Bio: ${PORTFOLIO_DATA.bio}
 
 Detailed Experience:
@@ -24,15 +26,16 @@ Guidelines:
 1. Be professional, friendly, and helpful.
 2. If someone asks for contact info, provide ${PORTFOLIO_DATA.email}.
 3. Keep responses concise and focused on the portfolio content.
-4. If asked something unrelated to Alex or their portfolio, gently steer the conversation back to their professional profile.
+4. If asked something unrelated to the portfolio, gently steer the conversation back to their professional profile.
 5. Use a tone that matches a modern, high-tech portfolio.
 `;
 
-export async function askPortfolioAI(message: string, history: { role: 'user' | 'assistant', content: string }[]): Promise<string> {
+export async function askPortfolioAI(message: string, history: Message[]): Promise<string> {
   try {
-    const contents = [
+    // Correctly mapping history to the expected Content structure for the SDK
+    const contents: Content[] = [
       ...history.map(m => ({
-        role: m.role === 'user' ? 'user' : 'model',
+        role: (m.role === 'user' ? 'user' : 'model') as 'user' | 'model',
         parts: [{ text: m.content }]
       })),
       {
@@ -41,18 +44,19 @@ export async function askPortfolioAI(message: string, history: { role: 'user' | 
       }
     ];
 
-    const response = await ai.models.generateContent({
+    // Using ai.models.generateContent to query GenAI with model name and prompt/contents
+    const response: GenerateContentResponse = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: contents as any,
+      contents: contents,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
         temperature: 0.7,
         topK: 40,
         topP: 0.95,
-        maxOutputTokens: 500,
       },
     });
 
+    // Access the extracted string output using the .text property (not a method)
     return response.text || "I'm sorry, I couldn't generate a response right now.";
   } catch (error) {
     console.error("AI Assistant Error:", error);

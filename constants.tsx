@@ -2,10 +2,10 @@
 import { PortfolioData } from './types';
 
 export const PORTFOLIO_DATA: PortfolioData = {
-  name: "Alex Sterling",
+  name: "Felicia",
   role: "Senior Full Stack Engineer",
   location: "San Francisco, CA",
-  email: "alex@example.com",
+  email: "felicia@example.com",
   bio: "Passionate architect of digital experiences with 8+ years of expertise in high-performance web applications and AI integration. I build products that bridge the gap between complex data and elegant user interfaces.",
   skills: [
     { category: "Frontend", items: ["React", "TypeScript", "Tailwind CSS", "Next.js", "Framer Motion", "D3.js"] },
