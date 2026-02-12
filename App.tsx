@@ -19,6 +19,7 @@ const App: React.FC = () => {
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [formError, setFormError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const services = [
     "Player Sponsorship",
@@ -78,18 +79,18 @@ const App: React.FC = () => {
         },
         body: JSON.stringify(payload)
       });
+      
+      // On success, show the success modal and clear the form
+      setShowSuccessModal(true);
+      setFormData({ name: '', email: '', message: '' });
+      setSelectedServices([]);
+      
     } catch (err) {
       console.error('Webhook submission error:', err);
-      // We proceed to WhatsApp regardless so the lead is never lost
+      setFormError('There was an error submitting your inquiry. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
-
-    const whatsappNumber = '60120000000'; // Target number
-    const waMessageBody = `NEW INQUIRY\nName: ${formData.name}\nEmail: ${formData.email}\nServices: ${servicesText}\nMessage: ${formData.message}`;
-    
-    const encodedMessage = encodeURIComponent(waMessageBody);
-    window.open(`https://wa.me/${whatsappNumber}?text=${encodedMessage}`, '_blank');
   };
 
   return (
@@ -377,7 +378,7 @@ const App: React.FC = () => {
                 </>
               ) : (
                 <>
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.588-5.946 0-6.556 5.332-11.891 11.891-11.891 3.181 0 6.167 1.24 8.413 3.488 2.246 2.248 3.484 5.232 3.484 8.403 0 6.556-5.332 11.891-11.891 11.891-2.093 0-4.141-.544-5.946-1.587l-6.13 1.611c-.139.038-.28.058-.419.058-.337 0-.663-.131-.904-.372-.259-.258-.372-.631-.303-1.002zm6.34-3.244l.366.213c1.528.887 3.274 1.355 5.077 1.355 5.454 0 9.891-4.437 9.891-9.891 0-2.64-1.029-5.122-2.898-6.991-1.87-1.868-4.352-2.897-6.993-2.897-5.454 0-9.891 4.437-9.891 9.891 0-2.023.613 3.996 1.772 5.688l.235.344-1.011 3.691 3.844-1.011z" /></svg>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
                   Submit Inquiry
                 </>
               )}
@@ -385,6 +386,27 @@ const App: React.FC = () => {
           </form>
         </div>
       </section>
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="glass max-w-md w-full p-12 rounded-3xl border-yellow-400/30 text-center shadow-[0_0_50px_rgba(251,191,36,0.15)] relative animate-in zoom-in-95 duration-300">
+            <div className="w-20 h-20 bg-yellow-400 rounded-full flex items-center justify-center mx-auto mb-8 shadow-[0_0_20px_rgba(251,191,36,0.4)]">
+              <svg className="w-10 h-10 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+            </div>
+            <h3 className="text-3xl font-black uppercase italic tracking-tighter mb-4">Inquiry Received!</h3>
+            <p className="text-white/60 text-sm leading-relaxed mb-10">
+              Our Pro Relations team has received your request. We'll analyze your inquiry and get back to you via the email provided shortly.
+            </p>
+            <button 
+              onClick={() => setShowSuccessModal(false)}
+              className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-4 rounded-sm font-black uppercase italic tracking-widest transition-all"
+            >
+              Return to Tour
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Player Bio Modal */}
       {selectedPlayer && (
@@ -418,7 +440,7 @@ const App: React.FC = () => {
                   <div>
                     <h4 className="text-[10px] font-black uppercase text-indigo-400 mb-3 tracking-widest border-b border-indigo-500/20 pb-1 inline-block">Professional Biography</h4>
                     <p className="text-sm text-white/80 leading-relaxed italic">
-                      {selectedPlayer.bio || "Placeholder Bio: One of the most dynamic athletes on the professional pickleball circuit today, known for their strategic mastery of the kitchen and relentless court movement."}
+                      {selectedPlayer.bio || "One of the most dynamic athletes on the professional pickleball circuit today, known for their strategic mastery of the kitchen and relentless court movement."}
                     </p>
                   </div>
 
